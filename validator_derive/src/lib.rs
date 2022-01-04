@@ -1,21 +1,29 @@
 #![recursion_limit = "128"]
+// todo remove allow
+#![allow(dead_code)]
 
 use std::{collections::HashMap, unreachable};
 
+use darling::FromDeriveInput;
 use if_chain::if_chain;
 use proc_macro2::Span;
 use proc_macro_error::{abort, proc_macro_error};
 use quote::ToTokens;
 use quote::{quote, quote_spanned};
-use syn::{parse_quote, spanned::Spanned, GenericParam, Lifetime, LifetimeDef, Type};
+use syn::{
+    parse_macro_input, parse_quote, spanned::Spanned, DeriveInput, GenericParam, Lifetime,
+    LifetimeDef, Type,
+};
 
 use asserts::{assert_has_len, assert_has_range, assert_string_type, assert_type_matches};
+use ast::ValidateInput;
 use lit::*;
 use quoting::{quote_schema_validations, quote_validator, FieldQuoter};
 use validation::*;
 use validator_types::{CustomArgument, Validator};
 
 mod asserts;
+mod ast;
 mod lit;
 mod quoting;
 mod validation;
@@ -23,8 +31,20 @@ mod validation;
 #[proc_macro_derive(Validate, attributes(validate))]
 #[proc_macro_error]
 pub fn derive_validation(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let ast = syn::parse(input).unwrap();
-    impl_validate(&ast).into()
+    let input = parse_macro_input!(input as DeriveInput);
+    let ast: ValidateInput = ValidateInput::from_derive_input(&input).unwrap();
+    let ident = ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+
+    let output = quote! {
+        impl #impl_generics ::validator::Validate for #ident #ty_generics #where_clause {
+            fn validate(&self) -> ::std::result::Result<(), ::validator::ValidationErrors> {
+                ::std::result::Result::Ok(())
+            }
+        }
+    };
+
+    output.into()
 }
 
 fn impl_validate(ast: &syn::DeriveInput) -> proc_macro2::TokenStream {

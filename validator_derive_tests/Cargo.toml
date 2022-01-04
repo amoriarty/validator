@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Vincent Prouillet <hello@vincentprouillet.com>"]
 edition = "2018"
 
+[dependencies]
+validator = { path = "../validator", features = ["derive"] }
+
 [dev-dependencies]
 validator = { version = "0.14", path = "../validator", features = ["phone", "card", "unic", "derive"] }
 serde = { version = "1.0", features = ["derive"] }

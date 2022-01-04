@@ -19,6 +19,7 @@ unic = ["validator_types/unic"]
 
 [dependencies]
 syn = { version = "1", features = ["extra-traits"] }
+darling = "0.13"
 quote = "1"
 proc-macro2 = "1"
 proc-macro-error = "1"
@@ -26,5 +27,3 @@ if_chain = "1"
 validator_types = { version = "0.14", path = "../validator_types" }
 regex = "1"
 lazy_static = "1"
-
-
