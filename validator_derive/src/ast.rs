@@ -1,7 +1,7 @@
 use darling::ast::Data;
 use darling::util::{Ignored, Override};
 use darling::{FromDeriveInput, FromField, FromMeta};
-use syn::NestedMeta;
+use syn::{Lit, NestedMeta};
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(validate), supports(struct_named))]
@@ -80,8 +80,30 @@ where
     }
 }
 
+#[derive(Debug)]
+pub(crate) enum ValueOrPath {
+    Value(u64),
+    Path(String),
+}
+
+impl FromMeta for ValueOrPath {
+    fn from_value(value: &Lit) -> darling::Result<Self> {
+        match value {
+            Lit::Int(lit_int) => Ok(Self::Value(lit_int.base10_parse().unwrap())),
+            Lit::Str(lit_str) => Self::from_string(&lit_str.value()),
+            _ => Err(darling::Error::unexpected_lit_type(value)),
+        }
+    }
+
+    fn from_string(value: &str) -> darling::Result<Self> {
+        Ok(Self::Path(value.to_string()))
+    }
+}
+
 pub(crate) mod opts {
     use darling::{Error, FromMeta};
+
+    use crate::ast::ValueOrPath;
 
     use super::FromStr;
 
@@ -132,11 +154,11 @@ pub(crate) mod opts {
     #[derive(Debug, FromMeta)]
     pub(crate) struct Length {
         #[darling(default)]
-        min: Option<u64>,
+        min: Option<ValueOrPath>,
         #[darling(default)]
-        max: Option<u64>,
+        max: Option<ValueOrPath>,
         #[darling(default)]
-        equal: Option<u64>,
+        equal: Option<ValueOrPath>,
         #[darling(default)]
         code: Option<String>,
         #[darling(default)]
@@ -146,9 +168,9 @@ pub(crate) mod opts {
     #[derive(Debug, FromMeta)]
     pub(crate) struct Range {
         #[darling(default)]
-        min: Option<u64>,
+        min: Option<ValueOrPath>,
         #[darling(default)]
-        max: Option<u64>,
+        max: Option<ValueOrPath>,
         #[darling(default)]
         code: Option<String>,
         #[darling(default)]
