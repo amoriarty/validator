@@ -27,3 +27,4 @@ if_chain = "1"
 validator_types = { version = "0.14", path = "../validator_types" }
 regex = "1"
 lazy_static = "1"
+cfg-if = "1"

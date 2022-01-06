@@ -34,14 +34,37 @@ pub fn derive_validation(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let input = parse_macro_input!(input as DeriveInput);
     let ast: ValidateInput = ValidateInput::from_derive_input(&input).unwrap();
     let ident = ast.ident;
-    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+    let generics = ast.generics.clone();
 
-    let output = quote! {
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+
+    let validate = quote! {
         impl #impl_generics ::validator::Validate for #ident #ty_generics #where_clause {
             fn validate(&self) -> ::std::result::Result<(), ::validator::ValidationErrors> {
+                use ::validator::ValidateArgs
+                self.validate_args(())
+            }
+        }
+    };
+
+    let mut generics = ast.generics;
+    generics
+        .params
+        .insert(0, GenericParam::Lifetime(LifetimeDef::new(Lifetime::new("'v_a", ident.span()))));
+
+    let (impl_generics, _, _) = generics.split_for_impl();
+    let validate_args = quote! {
+        impl #impl_generics ::validator::ValidateArgs<'v_a> for #ident #ty_generics #where_clause {
+            type Args = ();
+            fn validate_args(&self, args: Self::Args) -> ::std::result::Result<(), ::validator::ValidationErrors> {
                 ::std::result::Result::Ok(())
             }
         }
+    };
+
+    let output = quote! {
+        #validate
+        #validate_args
     };
 
     output.into()
